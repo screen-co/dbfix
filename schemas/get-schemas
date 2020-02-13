@@ -1,0 +1,24 @@
+#!/bin/bash
+
+cd libhyscancore || exit
+rm -rf ../schemas
+mkdir -p ../schemas
+
+git checkout wip/hyscan499
+git reset --hard origin/wip/hyscan499
+git log --pretty="format:%H %ad" --date="format:%Y.%m.%d-%H.%M" hyscancore/project-schema.xml hyscancore/track-schema.xml &> ../schemas.commits
+cat ../schemas.commits | while read line; do
+
+  commit=`echo "${line}" | cut -d ' ' -f 1`
+  dt=`echo "${line}" | cut -d ' ' -f 2`
+
+  echo "process ${commit}: ${dt}"
+
+  git checkout "${commit}"
+
+  md5=`md5sum hyscancore/project-schema.xml | cut -d ' ' -f 1`
+  cp hyscancore/project-schema.xml ../schemas/${dt}.prj.${md5}
+  md5=`md5sum hyscancore/track-schema.xml | cut -d ' ' -f 1`
+  cp hyscancore/track-schema.xml ../schemas/${dt}.trk.${md5}
+
+done

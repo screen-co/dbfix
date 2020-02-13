@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="project-info">
+    <node id="schema">
+      <key id="id" name="Project info schema id" type="integer" access="r">
+        <default>1495752243900067309</default>
+      </key>
+      <key id="version" name="Project info schema version" type="integer" access="r">
+        <default>20180100</default>
+      </key>
+    </node>
+    <key id="id" name="Project id" type="string"/>
+    <key id="ctime" name="Creation date and time" type="integer" view="datetime"/>
+    <key id="mtime" name="Modification date and time" type="integer" view="datetime"/>
+    <key id="description" name="Project description" type="string"/>
+  </schema>
+
+  <schema id="track-info">
+    <node id="schema">
+      <key id="id" name="Track info schema id" type="integer" access="r">
+        <default>3829672927190415735</default>
+      </key>
+      <key id="version" name="Track info schema version" type="integer" access="r">
+        <default>20180100</default>
+      </key>
+    </node>
+    <key id="mtime" name="Modification date and time" type="integer" view="datetime"/>
+    <key id="description" name="Track description" type="string"/>
+  </schema>
+
+  <schema id="waterfall-mark">
+    <node id="schema">
+      <key id="id" name="Waterfall mark schema id" type="integer" access="readonly">
+        <default>1315931457526726065</default>
+      </key>
+      <key id="version" name="Waterfall mark schema version" type="integer" access="readonly">
+        <default>20190100</default>
+      </key>
+    </node>
+    <key id="name" name="Mark short name" type="string"/>
+    <key id="description" name="Detailed description" type="string"/>
+    <key id="operator" name="Operator name" type="string"/>
+    <key id="label" name="Applied labels" type="integer"/>
+    <key id="ctime" name="Creation date and time" type="integer"/>
+    <key id="mtime" name="Modification date and time" type="integer"/>
+    <key id="track" name="Track id" type="string"/>
+    <key id="source" name="Source type (center)" type="integer"/>
+    <key id="index" name="Index number (center)" type="integer"/>
+    <key id="count" name="Count number (center)" type="integer"/>
+    <key id="width" name="Mark width" type="double"/>
+    <key id="height" name="Mark height" type="double"/>
+  </schema>
+
+  <schema id="geo-mark">
+    <node id="schema">
+      <key id="id" name="Geo mark schema id" type="integer" access="readonly">
+        <default>4566818919687782529</default>
+      </key>
+      <key id="version" name="Geo mark schema version" type="integer" access="readonly">
+        <default>20190100</default>
+      </key>
+    </node>
+    <key id="name" name="Mark short name" type="string"/>
+    <key id="description" name="Detailed description" type="string"/>
+    <key id="operator" name="Operator name" type="string"/>
+    <key id="label" name="Applied labels" type="integer"/>
+    <key id="ctime" name="Creation date and time" type="integer"/>
+    <key id="mtime" name="Modification date and time" type="integer"/>
+    <key id="lat" name="Latitude (center)" type="double"/>
+    <key id="lon" name="Longitude (center)" type="double"/>
+    <key id="width" name="Mark width" type="double"/>
+    <key id="height" name="Mark height" type="double"/>
+  </schema>
+</schemalist>
