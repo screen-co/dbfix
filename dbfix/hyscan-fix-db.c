@@ -357,6 +357,7 @@ hyscan_fix_db_complete (HyScanFixDB *fix)
   if (priv->upgrader != NULL)
     {
       g_thread_join (priv->upgrader);
+      priv->upgrader = NULL;
       status = priv->status;
     }
   g_mutex_unlock (&priv->lock);
