@@ -54,6 +54,8 @@ hyscan_fix_track_get_hash (HyScanFixTrackVersion version)
       return "9726336af32731e31dd3752276981192";
     case HYSCAN_FIX_TRACK_E8B616CC:
       return "e8b616ccac5dab4da97444e4b93ac7f4";
+    case HYSCAN_FIX_TRACK_423880D1:
+      return "423880d10472f9465725e5d4761b32cd";
     default:
       break;
     }
@@ -882,7 +884,7 @@ exit:
 
 /* Функция обновляет формат данных галса с версии 9726336a до e8b616cc.
  *
- * Версия 9726336a являлась внутренней версией.
+ * Версия 9726336a являлась внутренней.
  *
  * Добавлен параметр /signal/heterodyne.
  */
@@ -929,6 +931,65 @@ hyscan_fix_track_9726336a (const gchar *db_path,
 
   /* Обновление схемы параметров галса. */
   if (!hyscan_fix_track_set_schema (db_path, track_path, HYSCAN_FIX_TRACK_E8B616CC))
+    goto exit;
+
+  /* Уборка. */
+  status = hyscan_fix_cleanup (db_path);
+
+exit:
+  g_clear_pointer (&params, g_key_file_unref);
+  g_clear_pointer (&groups, g_strfreev);
+  g_free (prm_file);
+
+  return status;
+}
+
+/* Функция обновляет формат данных галса с версии e8b616cc до 423880d1.
+ *
+ * Версия e8b616cc являлась внутренней.
+ *
+ * Добавлен параметр /antenna/group.
+ */
+static gboolean
+hyscan_fix_track_e8b616cc (const gchar *db_path,
+                           const gchar *track_path)
+{
+  gboolean status = FALSE;
+  gchar *prm_file = NULL;
+
+  GKeyFile *params = NULL;
+  gchar **groups = NULL;
+  guint i;
+
+  /* Бэкап параметров галса. */
+  prm_file = g_build_filename (track_path, "track.prm", NULL);
+  if (!hyscan_fix_file_backup (db_path, prm_file, TRUE))
+    goto exit;
+
+  /* Преобразование параметров галса. */
+  g_free (prm_file);
+  prm_file = g_build_filename (db_path, track_path, "track.prm", NULL);
+
+  params = g_key_file_new ();
+  if (!g_key_file_load_from_file (params, prm_file, G_KEY_FILE_NONE, NULL))
+    goto exit;
+
+  /* Для акустических каналов добавляем параметр /antenna/group. */
+  groups = g_key_file_get_groups (params, NULL);
+  for (i = 0; groups != NULL && groups[i] != NULL; i++)
+    {
+      gchar *schema_id = g_key_file_get_string (params, groups[i], "schema-id", NULL);
+      if (g_strcmp0 (schema_id, "acoustic") == 0)
+        g_key_file_set_int64 (params, groups[i], "/antenna/group", 1);
+      g_free (schema_id);
+    }
+
+  /* Записываем изменённые параметры. */
+  if (!g_key_file_save_to_file (params, prm_file, NULL))
+    goto exit;
+
+  /* Обновление схемы параметров галса. */
+  if (!hyscan_fix_track_set_schema (db_path, track_path, HYSCAN_FIX_TRACK_423880D1))
     goto exit;
 
   /* Уборка. */
@@ -1044,6 +1105,11 @@ hyscan_fix_track (const gchar       *db_path,
         status = hyscan_fix_track_9726336a (db_path, track_path);
 
     case HYSCAN_FIX_TRACK_E8B616CC:
+      if (status)
+        status = hyscan_fix_track_e8b616cc (db_path, track_path);
+      break;
+
+    case HYSCAN_FIX_TRACK_423880D1:
       break;
 
     case HYSCAN_FIX_TRACK_LAST:

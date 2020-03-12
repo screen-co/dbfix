@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="offset">
+    <key id="starboard" name="Starboard offset" type="double"/>
+    <key id="forward" name="Forward offset" type="double"/>
+    <key id="vertical" name="Vertical offset" type="double"/>
+    <key id="yaw" name="Yaw offset" type="double"/>
+    <key id="pitch" name="Pitch offset" type="double"/>
+    <key id="roll" name="Roll offset" type="double"/>
+  </schema>
+
+  <schema id="antenna">
+    <node id="offset">
+      <key id="vertical" name="Vertical offset" type="double"/>
+      <key id="horizontal" name="Horizontal offset" type="double"/>
+    </node>
+    <node id="aperture">
+      <key id="vertical" name="Vertical aperture" type="double"/>
+      <key id="horizontal" name="Horizontal aperture" type="double"/>
+    </node>
+    <key id="frequency" name="Center frequency" type="double"/>
+    <key id="bandwidth" name="Bandwidth" type="double"/>
+    <key id="group" name="Group" type="integer"/>
+  </schema>
+
+  <schema id="data">
+    <key id="type" name="Data type" type="string"/>
+    <key id="rate" name="Data discretization frequency" type="double"/>
+  </schema>
+
+  <schema id="adc">
+    <key id="vref" name="Reference voltage" type="double"/>
+    <key id="offset" name="Zero offset" type="integer"/>
+  </schema>
+
+  <schema id="track">
+    <node id="schema">
+      <key id="id" name="Track schema id" type="integer" access="r">
+        <default>1715033709558529337</default>
+      </key>
+      <key id="version" name="Track schema version" type="integer" access="r">
+        <default>20190100</default>
+      </key>
+    </node>
+    <key id="id" name="Track id" type="string"/>
+    <key id="prev-id" name="Prev track id" type="string"/>
+    <key id="next-id" name="Next track id" type="string"/>
+    <key id="ctime" name="Creation date and time" type="integer" view="datetime"/>
+    <key id="type" name="Track type" type="string"/>
+    <key id="operator" name="Operator name" type="string"/>
+    <key id="sonar" name="Sonar info" type="string" view="schema"/>
+  </schema>
+
+  <schema id="log">
+    <node id="schema">
+      <key id="id" name="Log channel schema id" type="integer" access="r">
+        <default>3957463010395734756</default>
+      </key>
+      <key id="version" name="Log channel schema version" type="integer" access="r">
+        <default>20190100</default>
+      </key>
+    </node>
+  </schema>
+
+  <schema id="sensor">
+    <node id="schema">
+      <key id="id" name="Sensor channel schema id" type="integer" access="r">
+        <default>5474665919775311270</default>
+      </key>
+      <key id="version" name="Sensor channel schema version" type="integer" access="r">
+        <default>20190100</default>
+      </key>
+    </node>
+    <node id="offset" schema="offset"/>
+    <key id="sensor-name" name="Sensor name" type="string"/>
+  </schema>
+
+  <schema id="acoustic">
+    <node id="schema">
+      <key id="id" name="Acoustic channel schema id" type="integer" access="r">
+        <default>3533456721320349085</default>
+      </key>
+      <key id="version" name="Acoustic channel schema version" type="integer" access="r">
+        <default>20200200</default>
+      </key>
+    </node>
+    <node id="offset" schema="offset"/>
+    <node id="antenna" schema="antenna"/>
+    <node id="data" schema="data"/>
+    <node id="adc" schema="adc"/>
+    <node id="signal">
+      <key id="frequency" name="Center frequency" type="double"/>
+      <key id="bandwidth" name="Bandwidth" type="double"/>
+      <key id="heterodyne" name="Heterodyne frequency" type="double"/>
+    </node>
+  </schema>
+
+  <schema id="signal">
+    <node id="schema">
+      <key id="id" name="Signal channel schema id" type="integer" access="r">
+        <default>4522835908161425227</default>
+      </key>
+      <key id="version" name="Signal schema version" type="integer" access="r">
+        <default>20190100</default>
+      </key>
+    </node>
+    <node id="data" schema="data"/>
+  </schema>
+
+  <schema id="tvg">
+    <node id="schema">
+      <key id="id" name="TVG channel schema id" type="integer" access="r">
+        <default>8911020404930317035</default>
+      </key>
+      <key id="version" name="TVG schema version" type="integer" access="r">
+        <default>20190100</default>
+      </key>
+    </node>
+    <node id="data" schema="data"/>
+  </schema>
+</schemalist>
