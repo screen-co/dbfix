@@ -1,0 +1,135 @@
+# Russian translations for dbfix package.
+# Copyright (C) 2020 THE dbfix'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the dbfix package.
+# Andrei Fadeev <andrei@webcontrol.ru>, 2020.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: dbfix 5.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-04-02 13:52+0300\n"
+"PO-Revision-Date: 2020-04-01 19:46+0300\n"
+"Last-Translator: Andrei Fadeev <andrei@webcontrol.ru>\n"
+"Language-Team: Russian\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: dbfix-cli.c:110 hyscan-fix-assistant.c:527
+msgid "Completed"
+msgstr "Завершено"
+
+#: dbfix-cli.c:112
+msgid "Failed"
+msgstr "Ошибка"
+
+#: hyscan-fix-assistant.c:244
+msgid ""
+"<b>Welcome to HyScan DB fix program!</b>\n"
+"\n"
+"HyScan DB fix is a database migration tool.\n"
+"It is used to update HyScan projects to provide\n"
+"compatibility with latest versions."
+msgstr ""
+"<b>Вас приветствует программа HyScan DB fix!</b>\n"
+"\n"
+"HyScan DB fix программа обновления проектов\n"
+"для обеспечения совместимости с новыми версиями."
+
+#: hyscan-fix-assistant.c:318
+msgid "Update another DB?"
+msgstr "Обновить другую БД?"
+
+#: hyscan-fix-assistant.c:322
+msgid "OK"
+msgstr "Да"
+
+#: hyscan-fix-assistant.c:349
+msgid "Welcome"
+msgstr "Приветствие"
+
+#: hyscan-fix-assistant.c:355
+msgid "Choose DB"
+msgstr "Выбор БД"
+
+#: hyscan-fix-assistant.c:360
+msgid "Confirm"
+msgstr "Подтверждение"
+
+#: hyscan-fix-assistant.c:365 hyscan-fix-assistant.c:370
+msgid "Update"
+msgstr "Обновление"
+
+#: hyscan-fix-assistant.c:385
+msgid "Cancel DB update"
+msgstr "Прервать обновление БД"
+
+#: hyscan-fix-assistant.c:386
+msgid ""
+"<b>Do you really want to cancel DB update?</b>\n"
+"It can render your DB invalid!"
+msgstr ""
+"<b>Вы действительно хотите прервать обновление БД?</b>\n"
+"Это может привести к неработоспособности БД!"
+
+#: hyscan-fix-assistant.c:388 hyscan-fix-assistant.c:403
+msgid "Yes"
+msgstr "Да"
+
+#: hyscan-fix-assistant.c:389 hyscan-fix-assistant.c:404
+msgid "No"
+msgstr "Нет"
+
+#: hyscan-fix-assistant.c:401
+msgid "Quit DB fix"
+msgstr "Завершение работы"
+
+#: hyscan-fix-assistant.c:402
+msgid "<b>Do you really want to quit DB fix?</b>"
+msgstr "<b>Вы действительно хотите завершить работу?</b>"
+
+#: hyscan-fix-assistant.c:450
+#, c-format
+msgid ""
+"HyScan DB fix is ready to update projects\n"
+"%s - %s"
+msgstr ""
+"HyScan DB fix готова приступить к обновлению проектов\n"
+"%s - %s"
+
+#: hyscan-fix-assistant.c:456
+#, c-format
+msgid "Update %s"
+msgstr "Обновление %s"
+
+#: hyscan-fix-assistant.c:527
+msgid "Cancelled"
+msgstr "Прервано"
+
+#: hyscan-fix-db.c:281
+#, c-format
+msgid "Update project %s"
+msgstr "Обновление проекта %s"
+
+#: hyscan-fix-db.c:308
+#, c-format
+msgid "Updating track %s.%s"
+msgstr "Обновление галса %s.%s"
+
+#: hyscan-fix-db.c:317
+#, c-format
+msgid "Failed to update %s.%s"
+msgstr "Ошибка при обновлении %s.%s"
+
+#: hyscan-fix-db.c:326
+#, c-format
+msgid "Updating parameters %s"
+msgstr "Обновление параметров %s"
+
+#: hyscan-fix-db.c:332
+#, c-format
+msgid "Failed to update parameters %s"
+msgstr "Ошибка при обновлении параметров %s"

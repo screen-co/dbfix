@@ -32,87 +32,59 @@
  * лицензии. Для этого свяжитесь с ООО Экран - <info@screen-co.ru>.
  */
 
-#include "hyscan-fix-db.h"
+#include "hyscan-fix-assistant.h"
 #include <hyscan-config.h>
 #include <glib/gi18n.h>
-#include <string.h>
 
-void
-clear (guint size)
-{
-  gchar *str = g_malloc (size + 1);
-
-  memset (str, ' ', size);
-  str[size] = 0;
-
-  g_print ("\r%s\r", str);
-
-  g_free (str);
-}
-
-void
-log_message (HyScanFixDB       *fix,
-             const gchar       *message,
-             HyScanCancellable *cancellable)
-{
-  gchar *out_message;
-  static gint size = 0;
-
-  clear (size);
-  out_message = g_strdup_printf ("[%3d%%]: %s",
-                                 (guint)(100.0 * hyscan_cancellable_get (cancellable)),
-                                 (message != NULL) ? message : "");
-  g_print ("%s", out_message);
-  size = strlen (out_message);
-  g_free (out_message);
-}
-
-void
-completed (HyScanFixDB *fix,
-           gboolean     status,
-           GMainLoop   *loop)
-{
-  g_main_loop_quit (loop);
-}
+#ifdef G_OS_WIN32
+#include <Windows.h>
+#endif
 
 int
 main (int    argc,
       char **argv)
 {
-  GMainLoop *loop;
-  HyScanFixDB *fix;
-  HyScanCancellable *cancellable;
-
-  if (argc != 2)
-    {
-      g_print ("Usage: dbfix-cli <db-path>\r\n\r\n");
-      return 0;
-    }
+  GtkWidget *assistant;
 
   setlocale (LC_ALL, "");
   bindtextdomain (GETTEXT_PACKAGE, hyscan_config_get_locale_dir ());
+  bindtextdomain ("libhyscangtk", hyscan_config_get_locale_dir());
   bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
+  bind_textdomain_codeset ("libhyscangtk" , "UTF-8");
   textdomain (GETTEXT_PACKAGE);
 
-  loop = g_main_loop_new (NULL, TRUE);
+  gtk_init (&argc, &argv);
 
-  fix = hyscan_fix_db_new ();
-  cancellable = hyscan_cancellable_new ();
+  assistant = hyscan_fix_assistant_new (hyscan_config_get_profile_dirs ());
 
-  g_signal_connect (fix, "log", G_CALLBACK (log_message), cancellable);
-  g_signal_connect (fix, "completed", G_CALLBACK (completed), loop);
+  gtk_widget_show_all (assistant);
 
-  hyscan_fix_db_upgrade (fix, argv[1], cancellable);
+  gtk_main ();
 
-  g_main_loop_run (loop);
-
-  if (hyscan_fix_db_complete (fix))
-    g_print ("\r\n%s\r\n", _("Completed"));
-  else
-    g_print ("\r\n%s\r\n",_("Failed"));
-
-  g_object_unref (cancellable);
-  g_object_unref (fix);
+  gtk_widget_destroy (assistant);
 
   return 0;
 }
+
+#ifdef G_OS_WIN32
+int WINAPI
+wWinMain (HINSTANCE hInst,
+          HINSTANCE hPreInst,
+          LPWSTR    lpCmdLine,
+          int       nCmdShow)
+{
+  int argc;
+  char **argv;
+
+  gint result;
+
+  argv = g_win32_get_command_line ();
+  argc = g_strv_length (argv);
+
+  result = main (argc, argv);
+
+  g_strfreev (argv);
+
+  return result;
+}
+#endif

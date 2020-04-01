@@ -49,23 +49,45 @@ else ()
 endif ()
 
 pkg_check_modules (GLIB2 REQUIRED glib-2.0 gobject-2.0 gthread-2.0 gio-2.0)
-add_definitions (${GLIB2_CFLAGS})
-link_directories (${GLIB2_LIBRARY_DIRS})
+pkg_check_modules (GTK3 REQUIRED "gtk+-3.0")
+add_definitions (${GLIB2_CFLAGS} ${GTK3_CFLAGS})
+link_directories (${GLIB2_LIBRARY_DIRS} ${GTK3_LIBRARY_DIRS})
 
-if (HYSCAN_SYS_LIBS)
-  pkg_check_modules (HYSCAN REQUIRED "hyscandb-${HYSCAN_MAJOR_VERSION}")
+if (HYSCAN_USE_SYS_LIBS)
+  pkg_check_modules (HYSCAN_CLI REQUIRED "hyscanb-${HYSCAN_MAJOR_VERSION}")
+  pkg_check_modules (HYSCAN REQUIRED "hyscangtk-${HYSCAN_MAJOR_VERSION}")
 
   link_directories (${HYSCAN_LIBRARY_DIRS})
   add_definitions (${HYSCAN_CFLAGS})
 else ()
   include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscantypes/hyscantypes")
+  include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscandriver/hyscandriver")
+  include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscancache/hyscancache")
+  include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscanmath/hyscanmath")
   include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscandb/hyscandb")
+  include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscancore/hyscancore")
+  include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscanmodel/hyscanmodel")
+  include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscangtk/hyscangtk")
 
   link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscantypes/bin")
+  link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscandriver/bin")
+  link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscancache/bin")
+  link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscanmath/bin")
   link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscandb/bin")
+  link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscancore/bin")
+  link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscanmodel/bin")
+  link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscangtk/bin")
 
+  set (HYSCAN_CLI_LIBRARIES "hyscantypes-${HYSCAN_MAJOR_VERSION}"
+                            "hyscandb-${HYSCAN_MAJOR_VERSION}")
   set (HYSCAN_LIBRARIES "hyscantypes-${HYSCAN_MAJOR_VERSION}"
-                        "hyscandb-${HYSCAN_MAJOR_VERSION}")
+                        "hyscandriver-${HYSCAN_MAJOR_VERSION}"
+                        "hyscancache-${HYSCAN_MAJOR_VERSION}"
+                        "hyscanmath-${HYSCAN_MAJOR_VERSION}"
+                        "hyscandb-${HYSCAN_MAJOR_VERSION}"
+                        "hyscancore-${HYSCAN_MAJOR_VERSION}"
+                        "hyscanmodel-${HYSCAN_MAJOR_VERSION}"
+                        "hyscangtk-${HYSCAN_MAJOR_VERSION}")
 endif ()
 
 include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/dbfix")
@@ -75,4 +97,5 @@ if (NOT HYSCAN_INSTALLED)
 endif ()
 
 add_definitions (-DG_LOG_DOMAIN="DBFix")
+add_definitions (-DGETTEXT_PACKAGE="dbfix")
 add_subdirectory (dbfix)

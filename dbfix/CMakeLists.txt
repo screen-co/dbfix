@@ -31,6 +31,13 @@ add_custom_command (OUTPUT "${CMAKE_BINARY_DIR}/resources/hyscan-fix-resources.c
                     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../schemas/8c1d17c827ebbc76fca7548e4ca06226"
                     VERBATIM)
 
+add_executable (dbfix     dbfix.c
+                          hyscan-fix-assistant.c
+                          hyscan-fix-common.c
+                          hyscan-fix-project.c
+                          hyscan-fix-track.c
+                          hyscan-fix-db.c
+                          ${CMAKE_BINARY_DIR}/resources/hyscan-fix-resources.c)
 add_executable (dbfix-cli dbfix-cli.c
                           hyscan-fix-common.c
                           hyscan-fix-project.c
@@ -38,9 +45,11 @@ add_executable (dbfix-cli dbfix-cli.c
                           hyscan-fix-db.c
                           ${CMAKE_BINARY_DIR}/resources/hyscan-fix-resources.c)
 
-target_link_libraries (dbfix-cli ${GLIB2_LIBRARIES} ${HYSCAN_LIBRARIES})
+target_link_libraries (dbfix ${GTK3_LIBRARIES} ${HYSCAN_LIBRARIES})
+target_link_libraries (dbfix-cli ${GLIB2_LIBRARIES} ${HYSCAN_CLI_LIBRARIES})
 
-install (TARGETS dbfix-cli
+install (TARGETS dbfix
+                 dbfix-cli
          COMPONENT runtime
          RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)

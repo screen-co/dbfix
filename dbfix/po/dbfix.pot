@@ -1,0 +1,126 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-04-02 13:52+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: dbfix-cli.c:110 hyscan-fix-assistant.c:527
+msgid "Completed"
+msgstr ""
+
+#: dbfix-cli.c:112
+msgid "Failed"
+msgstr ""
+
+#: hyscan-fix-assistant.c:244
+msgid ""
+"<b>Welcome to HyScan DB fix program!</b>\n"
+"\n"
+"HyScan DB fix is a database migration tool.\n"
+"It is used to update HyScan projects to provide\n"
+"compatibility with latest versions."
+msgstr ""
+
+#: hyscan-fix-assistant.c:318
+msgid "Update another DB?"
+msgstr ""
+
+#: hyscan-fix-assistant.c:322
+msgid "OK"
+msgstr ""
+
+#: hyscan-fix-assistant.c:349
+msgid "Welcome"
+msgstr ""
+
+#: hyscan-fix-assistant.c:355
+msgid "Choose DB"
+msgstr ""
+
+#: hyscan-fix-assistant.c:360
+msgid "Confirm"
+msgstr ""
+
+#: hyscan-fix-assistant.c:365 hyscan-fix-assistant.c:370
+msgid "Update"
+msgstr ""
+
+#: hyscan-fix-assistant.c:385
+msgid "Cancel DB update"
+msgstr ""
+
+#: hyscan-fix-assistant.c:386
+msgid ""
+"<b>Do you really want to cancel DB update?</b>\n"
+"It can render your DB invalid!"
+msgstr ""
+
+#: hyscan-fix-assistant.c:388 hyscan-fix-assistant.c:403
+msgid "Yes"
+msgstr ""
+
+#: hyscan-fix-assistant.c:389 hyscan-fix-assistant.c:404
+msgid "No"
+msgstr ""
+
+#: hyscan-fix-assistant.c:401
+msgid "Quit DB fix"
+msgstr ""
+
+#: hyscan-fix-assistant.c:402
+msgid "<b>Do you really want to quit DB fix?</b>"
+msgstr ""
+
+#: hyscan-fix-assistant.c:450
+#, c-format
+msgid ""
+"HyScan DB fix is ready to update projects\n"
+"%s - %s"
+msgstr ""
+
+#: hyscan-fix-assistant.c:456
+#, c-format
+msgid "Update %s"
+msgstr ""
+
+#: hyscan-fix-assistant.c:527
+msgid "Cancelled"
+msgstr ""
+
+#: hyscan-fix-db.c:281
+#, c-format
+msgid "Update project %s"
+msgstr ""
+
+#: hyscan-fix-db.c:308
+#, c-format
+msgid "Updating track %s.%s"
+msgstr ""
+
+#: hyscan-fix-db.c:317
+#, c-format
+msgid "Failed to update %s.%s"
+msgstr ""
+
+#: hyscan-fix-db.c:326
+#, c-format
+msgid "Updating parameters %s"
+msgstr ""
+
+#: hyscan-fix-db.c:332
+#, c-format
+msgid "Failed to update parameters %s"
+msgstr ""
