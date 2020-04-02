@@ -1078,8 +1078,6 @@ hyscan_fix_track_423880d1 (const gchar *db_path,
               new_name = g_strdup (cur_name);
             }
 
-          g_print ("%s: %s -> %s\n", groups[i], cur_name, new_name);
-
           g_key_file_set_string (params, groups[i], "/sensor-name", new_name);
 
           g_free (cur_name);
