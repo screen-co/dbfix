@@ -56,6 +56,8 @@
 
 #include <hyscan-db.h>
 
+#define HYSCAN_FIX_DB_INFO_TIMEOUT 100     /* Задержка между сигналами об изменениях, милисекунды. */
+
 enum
 {
   SIGNAL_LOG,
@@ -69,20 +71,29 @@ typedef struct _HyScanFixDBArgs
 
 struct _HyScanFixDBPrivate
 {
-  GMutex               lock;
-  GThread             *upgrader;
-  gchar               *db_path;
-  HyScanCancellable   *cancellable;
-  gboolean             status;
+  GMutex               lock;               /* Блокировка. */
+  GThread             *upgrader;           /* Поток обновления проектов. */
+  gchar               *db_path;            /* Путь к обновляемым проектам. */
+  HyScanCancellable   *cancellable;        /* Управление обновлением. */
+
+  guint                alerter;            /* Идентификатор обработчика сигнализирующего об изменениях. */
+  gchar               *log_message;        /* Описание текущего действия. */
+  gboolean             status;             /* Статус обновления. */
+  gboolean             completed;          /* Признак завершения обновления. */
 };
 
 static void            hyscan_fix_db_object_constructed      (GObject            *object);
 static void            hyscan_fix_db_object_finalize         (GObject            *object);
 
-static gboolean        hyscan_fix_db_project_upgrade         (HyScanFixDB        *fix,
-                                                              const gchar        *project_name);
+static void            hyscan_fix_db_set_log_message         (HyScanFixDB        *fix,
+                                                              gchar              *log_message);
+
+static gboolean        hyscan_fix_db_alerter                 (gpointer            data);
 
 static gpointer        hyscan_fix_db_upgrader                (gpointer            data);
+
+static gboolean        hyscan_fix_db_project_upgrade         (HyScanFixDB        *fix,
+                                                              const gchar        *project_name);
 
 static guint           hyscan_fix_db_signals[SIGNAL_LAST] = { 0 };
 
@@ -101,7 +112,7 @@ hyscan_fix_db_class_init (HyScanFixDBClass *klass)
    * @fix: указатель на #HyScanFixDB
    * @message: информационное сообщение
    *
-   * Сигнал посылается для информирование польщователя о
+   * Сигнал посылается для информирования пользователя о
    * текущем выполняемом действии.
    */
   hyscan_fix_db_signals[SIGNAL_LOG] =
@@ -134,6 +145,8 @@ hyscan_fix_db_object_constructed (GObject *object)
   HyScanFixDB *fix = HYSCAN_FIX_DB (object);
   HyScanFixDBPrivate *priv = fix->priv;
 
+  priv->alerter = g_timeout_add (HYSCAN_FIX_DB_INFO_TIMEOUT, hyscan_fix_db_alerter, fix);
+
   g_mutex_init (&priv->lock);
 }
 
@@ -143,95 +156,52 @@ hyscan_fix_db_object_finalize (GObject *object)
   HyScanFixDB *fix = HYSCAN_FIX_DB (object);
   HyScanFixDBPrivate *priv = fix->priv;
 
+  if (priv->alerter > 0)
+    g_source_remove (priv->alerter);
+
   hyscan_fix_db_complete (fix);
   g_mutex_clear (&priv->lock);
 
   G_OBJECT_CLASS (hyscan_fix_db_parent_class)->finalize (object);
 }
 
-/* Функция обновляет проект и все галсы в нём. */
-static gboolean
-hyscan_fix_db_project_upgrade (HyScanFixDB *fix,
-                               const gchar *project_name)
+/* Функция устанавливает сообщение с описанием текущего действия. */
+static void
+hyscan_fix_db_set_log_message (HyScanFixDB *fix,
+                               gchar       *log_message)
 {
   HyScanFixDBPrivate *priv = fix->priv;
-  gboolean status = TRUE;
+  gchar *old_message = g_atomic_pointer_get (&priv->log_message);
+
+  if (g_atomic_pointer_compare_and_exchange (&priv->log_message, old_message, log_message))
+    g_free (old_message);
+  else if (g_atomic_pointer_get (&priv->log_message) == NULL)
+    g_atomic_pointer_set (&priv->log_message, log_message);
+  else
+    g_free (log_message);
+}
+
+/* Функция сигнализатор об изменениях в состоянии процесса обновления. */
+static gboolean
+hyscan_fix_db_alerter (gpointer data)
+{
+  HyScanFixDB *fix  = data;
+  HyScanFixDBPrivate *priv = fix->priv;
   gchar *log_message;
-  gchar *project_path;
-  gchar **tracks;
-  guint n_tracks;
-  gint version;
-  guint i;
 
-  version = hyscan_fix_project_get_version (priv->db_path, project_name);
-  if (version == HYSCAN_FIX_PROJECT_NOT_PROJECT)
-    return TRUE;
-
-  log_message = g_strdup_printf (_("Update project %s"), project_name);
-  g_signal_emit (fix, hyscan_fix_db_signals[SIGNAL_LOG], 0, log_message);
-  g_free (log_message);
-
-  project_path = g_build_filename (priv->db_path, project_name, NULL);
-  tracks = hyscan_fix_dir_list (project_path);
-  g_free (project_path);
-
-  if (tracks == NULL)
-    return FALSE;
-
-  n_tracks = g_strv_length (tracks);
-  hyscan_cancellable_push (priv->cancellable);
-
-  for (i = 0; i < n_tracks; i++)
+  log_message = g_atomic_pointer_get (&priv->log_message);
+  if (log_message != NULL)
     {
-      gchar *track_path;
-
-      hyscan_cancellable_set_total (priv->cancellable, i, 0, n_tracks);
-
-      if (g_cancellable_is_cancelled (G_CANCELLABLE (priv->cancellable)))
-        break;
-
-      track_path = g_build_filename (project_name, tracks[i], NULL);
-      version = hyscan_fix_track_get_version (priv->db_path, track_path);
-      if ((version != HYSCAN_FIX_TRACK_NOT_TRACK) &&
-          (version != HYSCAN_FIX_TRACK_LATEST))
-        {
-          log_message = g_strdup_printf (_("Update track %s.%s"), project_name, tracks[i]);
-          g_signal_emit (fix, hyscan_fix_db_signals[SIGNAL_LOG], 0, log_message);
-          g_free (log_message);
-
-          status = hyscan_fix_track (priv->db_path, track_path, priv->cancellable);
-        }
-      g_free (track_path);
-
-      if (!status)
-        {
-          log_message = g_strdup_printf (_("Failed to update %s.%s"), project_name, tracks[i]);
-          g_signal_emit (fix, hyscan_fix_db_signals[SIGNAL_LOG], 0, log_message);
-          g_free (log_message);
-
-          break;
-        }
-    }
-
-  if (status)
-    {
-      log_message = g_strdup_printf (_("Update parameters %s"), project_name);
+      g_atomic_pointer_set (&priv->log_message, NULL);
       g_signal_emit (fix, hyscan_fix_db_signals[SIGNAL_LOG], 0, log_message);
       g_free (log_message);
-
-      status = hyscan_fix_project (priv->db_path, project_name);
-      if (!status)
-        {
-          log_message = g_strdup_printf (_("Failed to update parameters %s"), project_name);
-          g_signal_emit (fix, hyscan_fix_db_signals[SIGNAL_LOG], 0, log_message);
-          g_free (log_message);
-        }
     }
 
-  hyscan_cancellable_pop (priv->cancellable);
-  g_strfreev (tracks);
+  /* Сигнал о завершении обновления. */
+  if (g_atomic_int_compare_and_exchange (&priv->completed, TRUE, FALSE))
+    g_signal_emit (fix, hyscan_fix_db_signals[SIGNAL_COMPLETED], 0, priv->status);
 
-  return status;
+  return TRUE;
 }
 
 /* Поток обновления базы данных. */
@@ -285,10 +255,89 @@ exit:
   g_clear_pointer (&priv->db_path, g_free);
 
   priv->status = status;
-
-  g_signal_emit (fix, hyscan_fix_db_signals[SIGNAL_COMPLETED], 0, status);
+  g_atomic_int_set (&priv->completed, TRUE);
 
   return NULL;
+}
+
+/* Функция обновляет проект и все галсы в нём. */
+static gboolean
+hyscan_fix_db_project_upgrade (HyScanFixDB *fix,
+                               const gchar *project_name)
+{
+  HyScanFixDBPrivate *priv = fix->priv;
+  gboolean status = TRUE;
+  gchar *log_message;
+  gchar *project_path;
+  gchar **tracks;
+  guint n_tracks;
+  gint version;
+  guint i;
+
+  version = hyscan_fix_project_get_version (priv->db_path, project_name);
+  if (version == HYSCAN_FIX_PROJECT_NOT_PROJECT)
+    return TRUE;
+
+  log_message = g_strdup_printf (_("Update project %s"), project_name);
+  hyscan_fix_db_set_log_message (fix, log_message);
+
+  project_path = g_build_filename (priv->db_path, project_name, NULL);
+  tracks = hyscan_fix_dir_list (project_path);
+  g_free (project_path);
+
+  if (tracks == NULL)
+    return FALSE;
+
+  n_tracks = g_strv_length (tracks);
+  hyscan_cancellable_push (priv->cancellable);
+
+  for (i = 0; i < n_tracks; i++)
+    {
+      gchar *track_path;
+
+      hyscan_cancellable_set_total (priv->cancellable, i, 0, n_tracks);
+
+      if (g_cancellable_is_cancelled (G_CANCELLABLE (priv->cancellable)))
+        break;
+
+      track_path = g_build_filename (project_name, tracks[i], NULL);
+      version = hyscan_fix_track_get_version (priv->db_path, track_path);
+      if ((version != HYSCAN_FIX_TRACK_NOT_TRACK) &&
+          (version != HYSCAN_FIX_TRACK_LATEST))
+        {
+          log_message = g_strdup_printf (_("Updating track %s.%s"), project_name, tracks[i]);
+          hyscan_fix_db_set_log_message (fix, log_message);
+
+          status = hyscan_fix_track (priv->db_path, track_path, priv->cancellable);
+        }
+      g_free (track_path);
+
+      if (!status)
+        {
+          log_message = g_strdup_printf (_("Failed to update %s.%s"), project_name, tracks[i]);
+          hyscan_fix_db_set_log_message (fix, log_message);
+
+          break;
+        }
+    }
+
+  if (status)
+    {
+      log_message = g_strdup_printf (_("Updating parameters %s"), project_name);
+      hyscan_fix_db_set_log_message (fix, log_message);
+
+      status = hyscan_fix_project (priv->db_path, project_name);
+      if (!status)
+        {
+          log_message = g_strdup_printf (_("Failed to update parameters %s"), project_name);
+          hyscan_fix_db_set_log_message (fix, log_message);
+        }
+    }
+
+  hyscan_cancellable_pop (priv->cancellable);
+  g_strfreev (tracks);
+
+  return status;
 }
 
 /**

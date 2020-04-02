@@ -49,6 +49,8 @@ hyscan_fix_project_get_hash (HyScanFixProjectVersion version)
       return "3e65462db44e1dc9317f38a063d60ef1";
     case HYSCAN_FIX_PROJECT_6190124D:
       return "6190124dbc946f010e07a5ffb86f68ee";
+    case HYSCAN_FIX_PROJECT_2C71F69B:
+      return "2c71f69b31e8d610da88edcb8a165fe0";
     case HYSCAN_FIX_PROJECT_E38FABCF:
       return "e38fabcf1b95fced8c87447c1ffa0f32";
     case HYSCAN_FIX_PROJECT_3C282D25:
@@ -61,6 +63,8 @@ hyscan_fix_project_get_hash (HyScanFixProjectVersion version)
       return "de7491c1298d4368ad87ded88e617fea";
     case HYSCAN_FIX_PROJECT_AD1F40A3:
       return "ad1f40a3292926b566fe8ed6465a6e64";
+    case HYSCAN_FIX_PROJECT_B288BA04:
+      return "b288ba043bea8a11886a458a4bfab4a8";
     default:
       break;
     }
@@ -341,10 +345,11 @@ exit:
   return status;
 }
 
-/* Функция обновляет формат данных параметров проекта с версии e38fabcf
- * до 3c282d25.
+/* Функция обновляет формат данных параметров проекта с версий
+ * e38fabcf и 2c71f69b до 3c282d25.
  *
  * Версия e38fabcf записывается текущей версией ПО для АМЭ.
+ * Версия 2c71f69b из "master'а".
  *
  * При обновлении до 3c282d25 добавлена схема для геометок.
  */
@@ -648,6 +653,31 @@ exit:
   return status;
 }
 
+/* Функция обновляет формат данных параметров проекта с версии ad1f40a3
+ * до b288ba04.
+ *
+ * Версия ad1f40a3 являлась внутренней версией.
+ *
+ * При обновлении до b288ba04 изменены схемы для планировщика, но
+ * реального использования этих схем нет.
+ */
+static gboolean
+hyscan_fix_project_ad1f40a3 (const gchar *db_path,
+                             const gchar *project_path)
+{
+  gboolean status = FALSE;
+
+  /* Обновление схемы параметров проекта. */
+  if (!hyscan_fix_project_set_schema (db_path, project_path, HYSCAN_FIX_PROJECT_B288BA04))
+    goto exit;
+
+  /* Уборка. */
+  status = hyscan_fix_cleanup (db_path);
+
+exit:
+  return status;
+}
+
 /**
  * hyscan_fix_project_get_version:
  * @db_path: путь к базе данных (каталог с проектами)
@@ -692,6 +722,9 @@ hyscan_fix_project_get_version (const gchar *db_path,
 
   if (version == HYSCAN_FIX_PROJECT_LAST)
     version = HYSCAN_FIX_PROJECT_UNKNOWN;
+
+  if (version == HYSCAN_FIX_PROJECT_UNKNOWN)
+    hyscan_fix_log (db_path, "unknown project version %s - %s", project_path, sch_md5);
 
 exit:
   g_free (sch_md5);
@@ -743,6 +776,7 @@ hyscan_fix_project (const gchar *db_path,
       if (status)
         status = hyscan_fix_project_6190124d (db_path, project_path);
 
+    case HYSCAN_FIX_PROJECT_2C71F69B:
     case HYSCAN_FIX_PROJECT_E38FABCF:
       if (status)
         status = hyscan_fix_project_e38fabcf (db_path, project_path);
@@ -764,6 +798,10 @@ hyscan_fix_project (const gchar *db_path,
         status = hyscan_fix_project_de7491c1 (db_path, project_path);
 
     case HYSCAN_FIX_PROJECT_AD1F40A3:
+      if (status)
+        status = hyscan_fix_project_ad1f40a3 (db_path, project_path);
+
+    case HYSCAN_FIX_PROJECT_B288BA04:
       break;
 
     case HYSCAN_FIX_PROJECT_LAST:

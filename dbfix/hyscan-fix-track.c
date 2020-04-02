@@ -56,6 +56,8 @@ hyscan_fix_track_get_hash (HyScanFixTrackVersion version)
       return "e8b616ccac5dab4da97444e4b93ac7f4";
     case HYSCAN_FIX_TRACK_423880D1:
       return "423880d10472f9465725e5d4761b32cd";
+    case HYSCAN_FIX_TRACK_49A23606:
+      return "49a23606a3160bb9e5cfdf52a8badd81";
     default:
       break;
     }
@@ -205,6 +207,81 @@ exit:
   g_free (path);
 
   return status;
+}
+
+/* Функция возвращает значение рабочей частоты канала. */
+static gdouble
+hyscan_fix_track_get_signal_frequency (const gchar *source,
+                                       gdouble      data_rate,
+                                       gdouble      signal_frequency)
+{
+  gint irate = data_rate;
+
+  switch (irate)
+    {
+    /* ППФ Гидра 4. */
+    case 61276:
+      if (g_str_has_prefix (source, "profiler"))
+        return 12000.0;
+      break;
+
+    /* ППФ Гидра 5. */
+    case 58640:
+      if (g_str_has_prefix (source, "profiler"))
+        return 12000.0;
+      break;
+
+    /* Эхолот ППФ Гидра 5. */
+    case 78125:
+      if (g_str_has_prefix (source, "echosounder"))
+        return 315657.0;
+      break;
+
+    /* ГБО 300 Гидра 4 левый борт. */
+    case 52083:
+      if (g_str_has_prefix (source, "ss-port"))
+        return 240000.0;
+      break;
+
+    /* ГБО 300 Гидра 4 правый борт. */
+    case 68681:
+      if (g_str_has_prefix (source, "ss-starboard"))
+        return 250000.0;
+      break;
+
+    /* ГБОЭ 700 Гидра 5 эхолот. */
+    case 208333:
+      if (g_str_has_prefix (source, "echosounder"))
+        return 1041670.0;
+      break;
+
+    /* ГБОЭ 700 Гидра 5 левый и правый борта. */
+    case 223214:
+      if (g_str_has_prefix (source, "ss-port"))
+        return 538793;
+      if (g_str_has_prefix (source, "ss-starboard"))
+        return 664894;
+      break;
+
+    /* ВСЛ Гидра 5. */
+    case 111607:
+      if (g_str_has_prefix (source, "forward-look"))
+       return 434027.0;
+      break;
+
+    /* ВСЛ Гидра 5 левый и правый борта. */
+    case 156250:
+      if (g_str_has_prefix (source, "ss-port"))
+        return 679348;
+      if (g_str_has_prefix (source, "ss-starboard"))
+        return 679348;
+      break;
+    }
+
+  if (signal_frequency > 1e3)
+    return signal_frequency;
+
+  return -1.0;
 }
 
 /* Функция преобразовывает названия каналов данных. */
@@ -370,81 +447,6 @@ exit:
   g_strfreev (channels);
 
   return info;
-}
-
-/* Функция возвращает значение рабочей частоты канала. */
-static gdouble
-hyscan_fix_track_get_signal_frequency (const gchar *source,
-                                       gdouble      data_rate,
-                                       gdouble      signal_frequency)
-{
-  gint irate = data_rate;
-
-  switch (irate)
-    {
-    /* ППФ Гидра 4. */
-    case 61276:
-      if (g_str_has_prefix (source, "profiler"))
-        return 12000.0;
-      break;
-
-    /* ППФ Гидра 5. */
-    case 58640:
-      if (g_str_has_prefix (source, "profiler"))
-        return 12000.0;
-      break;
-
-    /* Эхолот ППФ Гидра 5. */
-    case 78125:
-      if (g_str_has_prefix (source, "echosounder"))
-        return 315657.0;
-      break;
-
-    /* ГБО 300 Гидра 4 левый борт. */
-    case 52083:
-      if (g_str_has_prefix (source, "ss-port"))
-        return 240000.0;
-      break;
-
-    /* ГБО 300 Гидра 4 правый борт. */
-    case 68681:
-      if (g_str_has_prefix (source, "ss-starboard"))
-        return 250000.0;
-      break;
-
-    /* ГБОЭ 700 Гидра 5 эхолот. */
-    case 208333:
-      if (g_str_has_prefix (source, "echosounder"))
-        return 1041670.0;
-      break;
-
-    /* ГБОЭ 700 Гидра 5 левый и правый борта. */
-    case 223214:
-      if (g_str_has_prefix (source, "ss-port"))
-        return 538793;
-      if (g_str_has_prefix (source, "ss-starboard"))
-        return 664894;
-      break;
-
-    /* ВСЛ Гидра 5. */
-    case 111607:
-      if (g_str_has_prefix (source, "forward-look"))
-       return 434027.0;
-      break;
-
-    /* ВСЛ Гидра 5 левый и правый борта. */
-    case 156250:
-      if (g_str_has_prefix (source, "ss-port"))
-        return 679348;
-      if (g_str_has_prefix (source, "ss-starboard"))
-        return 679348;
-      break;
-    }
-
-  if (signal_frequency > 1e3)
-    return signal_frequency;
-
-  return -1.0;
 }
 
 /* Функция преобразовывает параметры каналов данных. */
@@ -675,7 +677,14 @@ hyscan_fix_track_set_schema (const gchar           *db_path,
   return status;
 }
 
-/* Функция обновляет формат данных галса с версии 2f9c8a44 до 19a285f3. */
+/* Функция обновляет формат данных галса с версии 2f9c8a44 до 19a285f3.
+ *
+ * Версия 2f9c8a44 записывалась версией для испытаний АМЭ от 2017 года.
+ * Это старый формат, который предполагал параллельную запись сырых и
+ * обработанных данных.
+ *
+ * Оставляем только сырые данные.
+ */
 static gboolean
 hyscan_fix_track_2f9c8a44 (const gchar       *db_path,
                            const gchar       *track_path,
@@ -1003,6 +1012,101 @@ exit:
   return status;
 }
 
+/* Функция обновляет формат данных галса с версии 423880d1 до 49a23606.
+ *
+ * Версия 423880d1 являлась внутренней версией.
+ *
+ * Добавлена информация о плане галса в схему данных галса.
+ */
+static gboolean
+hyscan_fix_track_423880d1 (const gchar *db_path,
+                           const gchar *track_path)
+{
+  gboolean status = FALSE;
+  gchar *prm_file = NULL;
+
+  GKeyFile *params = NULL;
+  gchar **groups = NULL;
+  guint i;
+
+  guint gnss_index = 1;
+  guint ahrs_index = 1;
+
+  /* Бэкап параметров галса. */
+  prm_file = g_build_filename (track_path, "track.prm", NULL);
+  if (!hyscan_fix_file_backup (db_path, prm_file, TRUE))
+    goto exit;
+
+  /* Преобразование параметров галса. */
+  g_free (prm_file);
+  prm_file = g_build_filename (db_path, track_path, "track.prm", NULL);
+
+  params = g_key_file_new ();
+  if (!g_key_file_load_from_file (params, prm_file, G_KEY_FILE_NONE, NULL))
+    goto exit;
+
+  /* Для каналов датчиков определяем тип данных и изменяем названия. */
+  groups = g_key_file_get_groups (params, NULL);
+  for (i = 0; groups != NULL && groups[i] != NULL; i++)
+    {
+      gchar *schema_id = g_key_file_get_string (params, groups[i], "schema-id", NULL);
+      if (g_strcmp0 (schema_id, "sensor") == 0)
+        {
+          gchar *cur_name;
+          gchar *new_name;
+
+          cur_name = g_key_file_get_string (params, groups[i], "/sensor-name", NULL);
+          if (g_str_has_prefix (cur_name, "nmea"))
+            {
+              if (gnss_index == 1)
+                new_name = g_strdup ("gnss-nmea");
+              else
+                new_name = g_strdup_printf ("gnss-nmea-%d", gnss_index);
+              gnss_index += 1;
+            }
+          else if (g_str_has_prefix (cur_name, "xsens") ||
+                   g_str_has_prefix (cur_name, "ahrs"))
+            {
+              if (ahrs_index == 1)
+                new_name = g_strdup ("gnss-ahrs-nmea");
+              else
+                new_name = g_strdup_printf ("gnss-ahrs-nmea-%d", ahrs_index);
+              ahrs_index += 1;
+            }
+          else
+            {
+              new_name = g_strdup (cur_name);
+            }
+
+          g_print ("%s: %s -> %s\n", groups[i], cur_name, new_name);
+
+          g_key_file_set_string (params, groups[i], "/sensor-name", new_name);
+
+          g_free (cur_name);
+          g_free (new_name);
+        }
+      g_free (schema_id);
+    }
+
+  /* Записываем изменённые параметры. */
+  if (!g_key_file_save_to_file (params, prm_file, NULL))
+    goto exit;
+
+  /* Обновление схемы параметров галса. */
+  if (!hyscan_fix_track_set_schema (db_path, track_path, HYSCAN_FIX_TRACK_49A23606))
+    goto exit;
+
+  /* Уборка. */
+  status = hyscan_fix_cleanup (db_path);
+
+exit:
+  g_clear_pointer (&params, g_key_file_unref);
+  g_clear_pointer (&groups, g_strfreev);
+  g_free (prm_file);
+
+  return status;
+}
+
 /**
  * hyscan_fix_track_get_version:
  * @db_path: путь к базе данных (каталог с проектами)
@@ -1047,6 +1151,9 @@ hyscan_fix_track_get_version (const gchar *db_path,
 
   if (version == HYSCAN_FIX_TRACK_LAST)
     version = HYSCAN_FIX_TRACK_UNKNOWN;
+
+  if (version == HYSCAN_FIX_TRACK_UNKNOWN)
+    hyscan_fix_log (db_path, "unknown track version %s - %s", track_path, sch_md5);
 
 exit:
   g_free (sch_md5);
@@ -1107,9 +1214,12 @@ hyscan_fix_track (const gchar       *db_path,
     case HYSCAN_FIX_TRACK_E8B616CC:
       if (status)
         status = hyscan_fix_track_e8b616cc (db_path, track_path);
-      break;
 
     case HYSCAN_FIX_TRACK_423880D1:
+      if (status)
+        status = hyscan_fix_track_423880d1 (db_path, track_path);
+
+    case HYSCAN_FIX_TRACK_49A23606:
       break;
 
     case HYSCAN_FIX_TRACK_LAST:

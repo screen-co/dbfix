@@ -33,28 +33,7 @@
  */
 
 #include "hyscan-fix-db.h"
-
-G_LOCK_DEFINE (lock);
-gboolean done = FALSE;
-gchar *message = NULL;
-
-void
-log_message (HyScanFixDB *fix,
-             const gchar *log_message)
-{
-  G_LOCK (lock);
-  g_clear_pointer (&message, g_free);
-  message = g_strdup (log_message);
-  G_UNLOCK (lock);
-}
-
-void
-completed (HyScanFixDB *fix,
-           gboolean     status,
-           gboolean    *done)
-{
-  g_atomic_int_set (done, TRUE);
-}
+#include <string.h>
 
 void
 clear (guint size)
@@ -69,13 +48,38 @@ clear (guint size)
   g_free (str);
 }
 
+void
+log_message (HyScanFixDB       *fix,
+             const gchar       *message,
+             HyScanCancellable *cancellable)
+{
+  gchar *out_message;
+  static gint size = 0;
+
+  clear (size);
+  out_message = g_strdup_printf ("[%3d%%]: %s",
+                                 (guint)(100.0 * hyscan_cancellable_get (cancellable)),
+                                 (message != NULL) ? message : "");
+  g_print ("%s", out_message);
+  size = strlen (out_message);
+  g_free (out_message);
+}
+
+void
+completed (HyScanFixDB *fix,
+           gboolean     status,
+           GMainLoop   *loop)
+{
+  g_main_loop_quit (loop);
+}
+
 int
 main (int    argc,
       char **argv)
 {
+  GMainLoop *loop;
   HyScanFixDB *fix;
   HyScanCancellable *cancellable;
-  guint size = 0;
 
   if (argc != 2)
     {
@@ -83,38 +87,25 @@ main (int    argc,
       return 0;
     }
 
-  fix = hyscan_fix_db_new ();
-  g_signal_connect (fix, "log", G_CALLBACK (log_message), NULL);
-  g_signal_connect (fix, "completed", G_CALLBACK (completed), &done);
+  loop = g_main_loop_new (NULL, TRUE);
 
+  fix = hyscan_fix_db_new ();
   cancellable = hyscan_cancellable_new ();
+
+  g_signal_connect (fix, "log", G_CALLBACK (log_message), cancellable);
+  g_signal_connect (fix, "completed", G_CALLBACK (completed), loop);
+
   hyscan_fix_db_upgrade (fix, argv[1], cancellable);
 
-  while (!g_atomic_int_get (&done))
-    {
-      gchar *out_message;
+  g_main_loop_run (loop);
 
-      G_LOCK (lock);
-
-      clear (size);
-      out_message = g_strdup_printf ("[%3d%%]: %s",
-                                     (guint)(100.0 * hyscan_cancellable_get (cancellable)),
-                                     (message != NULL) ? message : "");
-      g_print ("%s", out_message);
-      size = strlen (out_message);
-      g_free (out_message);
-
-      G_UNLOCK (lock);
-
-      g_usleep (100000);
-    }
-
-  clear (size);
   if (hyscan_fix_db_complete (fix))
-    g_print ("Completed\r\n");
+    g_print ("\r\nCompleted\r\n");
   else
-    g_print ("%s\r\n", message);
+    g_print ("\r\nFailed\r\n");
 
   g_object_unref (cancellable);
   g_object_unref (fix);
+
+  return 0;
 }
