@@ -65,10 +65,6 @@ enum
   SIGNAL_LAST
 };
 
-typedef struct _HyScanFixDBArgs
-{
-} HyScanFixDBArgs;
-
 struct _HyScanFixDBPrivate
 {
   GMutex               lock;               /* Блокировка. */
