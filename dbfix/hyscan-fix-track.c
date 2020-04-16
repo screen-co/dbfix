@@ -58,6 +58,8 @@ hyscan_fix_track_get_hash (HyScanFixTrackVersion version)
       return "423880d10472f9465725e5d4761b32cd";
     case HYSCAN_FIX_TRACK_49A23606:
       return "49a23606a3160bb9e5cfdf52a8badd81";
+    case HYSCAN_FIX_TRACK_E4DA49A9:
+      return "e4da49a9e1a33f0e866996879f3cdc90";
     default:
       break;
     }
@@ -770,7 +772,8 @@ exit:
  * Версия 19a285f3 записывалась ревизиями с 1-й по 4-ю online
  * инсталятора HyScan 5, сонобот-19 и версией для АМЭ от 2019 года.
  *
- * Изменяются названия параметров каналов данных:
+ * При обновлении до 9726336a изменились названия параметров смещений:
+ *
  * /offset/x     -> /offset/forward
  * /offset/y     -> /offset/starboard
  * /offset/z     -> /offset/vertical
@@ -788,7 +791,6 @@ hyscan_fix_track_19a285f3 (const gchar *db_path,
   GKeyFile *params_in = NULL;
   GKeyFile *params_out = NULL;
   gchar **groups = NULL;
-  gchar **keys = NULL;
   guint i, j;
 
   /* Бэкап параметров галса. */
@@ -809,66 +811,52 @@ hyscan_fix_track_19a285f3 (const gchar *db_path,
 
   for (i = 0; groups != NULL && groups[i] != NULL; i++)
     {
-      keys = g_key_file_get_keys (params_in, groups[i], NULL, NULL);
+      gchar **keys = g_key_file_get_keys (params_in, groups[i], NULL, NULL);
 
       for (j = 0; keys != NULL && keys[j] != NULL; j++)
         {
-          const gchar *key_out;
-          gdouble dvalue;
-          gchar *svalue;
-
-          dvalue = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
-          svalue = g_key_file_get_string (params_in, groups[i], keys[j], NULL);
-
           if (g_strcmp0 (keys[j], "/offset/x") == 0)
             {
-              key_out = "/offset/forward";
+              gdouble forward = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
+              g_key_file_set_double (params_out, groups[i], "/offset/forward", forward);
             }
           else if (g_strcmp0 (keys[j], "/offset/y") == 0)
             {
-              key_out = "/offset/starboard";
+              gdouble starboard = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
+              g_key_file_set_double (params_out, groups[i], "/offset/starboard", starboard);
             }
           else if (g_strcmp0 (keys[j], "/offset/z") == 0)
             {
-              key_out = "/offset/vertical";
+              gdouble vertical = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
+              g_key_file_set_double (params_out, groups[i], "/offset/vertical", vertical);
             }
           else if (g_strcmp0 (keys[j], "/offset/psi") == 0)
             {
-              key_out = "/offset/yaw";
-              dvalue = -dvalue;
+              gdouble yaw = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
+              g_key_file_set_double (params_out, groups[i], "/offset/yaw", -yaw);
             }
           else if (g_strcmp0 (keys[j], "/offset/gamma") == 0)
             {
-              key_out = "/offset/roll";
-              dvalue = -dvalue;
+              gdouble roll = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
+              g_key_file_set_double (params_out, groups[i], "/offset/roll", -roll);
             }
           else if (g_strcmp0 (keys[j], "/offset/theta") == 0)
             {
-              key_out = "/offset/pitch";
-              dvalue = -dvalue;
+              gdouble pitch = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
+              g_key_file_set_double (params_out, groups[i], "/offset/pitch", -pitch);
             }
           else
             {
-              key_out = keys[j];
+              gchar *value = g_key_file_get_string (params_in, groups[i], keys[j], NULL);
+              g_key_file_set_string (params_out, groups[i], keys[j], value);
+              g_free (value);
             }
-
-          if (key_out == keys[j])
-            {
-              g_key_file_set_string (params_out, groups[i], key_out, svalue);
-            }
-          else
-            {
-              g_key_file_set_double (params_out, groups[i], key_out, dvalue);
-
-              hyscan_fix_log (db_path, "rename track parameter in %s: %s -> %s\n",
-                              groups[i], keys[j], key_out);
-            }
-
-          g_free (svalue);
         }
 
-      g_clear_pointer (&keys, g_strfreev);
+      g_strfreev (keys);
     }
+
+  g_strfreev (groups);
 
   /* Записываем изменённые параметры. */
   if (!g_key_file_save_to_file (params_out, prm_file, NULL))
@@ -884,8 +872,6 @@ hyscan_fix_track_19a285f3 (const gchar *db_path,
 exit:
   g_clear_pointer (&params_in, g_key_file_unref);
   g_clear_pointer (&params_out, g_key_file_unref);
-  g_clear_pointer (&groups, g_strfreev);
-  g_clear_pointer (&keys, g_strfreev);
   g_free (prm_file);
 
   return status;
@@ -1017,6 +1003,12 @@ exit:
  * Версия 423880d1 являлась внутренней версией.
  *
  * Добавлена информация о плане галса в схему данных галса.
+ *
+ * Переименованы названия датчиков:
+ *
+ * nmea  -> gnss-nmea
+ * xsens -> gnss-ahrs-nmea
+ * ahrs  -> gnss-ahrs-nmea
  */
 static gboolean
 hyscan_fix_track_423880d1 (const gchar *db_path,
@@ -1050,6 +1042,7 @@ hyscan_fix_track_423880d1 (const gchar *db_path,
   for (i = 0; groups != NULL && groups[i] != NULL; i++)
     {
       gchar *schema_id = g_key_file_get_string (params, groups[i], "schema-id", NULL);
+
       if (g_strcmp0 (schema_id, "sensor") == 0)
         {
           gchar *cur_name;
@@ -1100,6 +1093,84 @@ hyscan_fix_track_423880d1 (const gchar *db_path,
 exit:
   g_clear_pointer (&params, g_key_file_unref);
   g_clear_pointer (&groups, g_strfreev);
+  g_free (prm_file);
+
+  return status;
+}
+
+/* Функция обновляет формат данных галса с версии 49a23606 до e4da49a9.
+ *
+ * Версия b288ba04 записывалась ревизией HyScan для "корейцев" от 04.04.2020.
+ *
+ * При обновлении до e4da49a9 изменилось название параметра планируемой
+ * скорости съёмки /plan/velocity-> /plan/speed.
+ */
+static gboolean
+hyscan_fix_track_49a23606 (const gchar *db_path,
+                           const gchar *track_path)
+{
+  gboolean status = FALSE;
+  gchar *prm_file = NULL;
+
+  GKeyFile *params_in = NULL;
+  GKeyFile *params_out = NULL;
+  gchar **groups = NULL;
+  guint i, j;
+
+  /* Бэкап параметров галса. */
+  prm_file = g_build_filename (track_path, "track.prm", NULL);
+  if (!hyscan_fix_file_backup (db_path, prm_file, TRUE))
+    goto exit;
+
+  /* Преобразование параметров галса. */
+  g_free (prm_file);
+  prm_file = g_build_filename (db_path, track_path, "track.prm", NULL);
+
+  params_in = g_key_file_new ();
+  if (!g_key_file_load_from_file (params_in, prm_file, G_KEY_FILE_NONE, NULL))
+    goto exit;
+
+  params_out = g_key_file_new ();
+  groups = g_key_file_get_groups (params_in, NULL);
+
+  for (i = 0; groups != NULL && groups[i] != NULL; i++)
+    {
+      gchar **keys = g_key_file_get_keys (params_in, groups[i], NULL, NULL);
+
+      for (j = 0; keys != NULL && keys[j] != NULL; j++)
+        {
+          if (g_strcmp0 (keys[j], "/plan/velocity") == 0)
+            {
+              gdouble speed = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
+              g_key_file_set_double (params_out, groups[i], "/plan/speed", speed);
+            }
+          else
+            {
+              gchar *value = g_key_file_get_string (params_in, groups[i], keys[j], NULL);
+              g_key_file_set_string (params_out, groups[i], keys[j], value);
+              g_free (value);
+            }
+        }
+
+      g_strfreev (keys);
+    }
+
+  g_strfreev (groups);
+
+  /* Записываем изменённые параметры. */
+  if (!g_key_file_save_to_file (params_out, prm_file, NULL))
+    goto exit;
+
+  /* Обновление схемы параметров галса. */
+  if (!hyscan_fix_track_set_schema (db_path, track_path, HYSCAN_FIX_TRACK_E4DA49A9))
+    goto exit;
+
+  /* Уборка. */
+  status = hyscan_fix_cleanup (db_path);
+
+exit:
+  g_clear_pointer (&params_in, g_key_file_unref);
+  g_clear_pointer (&params_out, g_key_file_unref);
   g_free (prm_file);
 
   return status;
@@ -1218,6 +1289,10 @@ hyscan_fix_track (const gchar       *db_path,
         status = hyscan_fix_track_423880d1 (db_path, track_path);
 
     case HYSCAN_FIX_TRACK_49A23606:
+      if (status)
+        status = hyscan_fix_track_49a23606 (db_path, track_path);
+
+    case HYSCAN_FIX_TRACK_E4DA49A9:
       break;
 
     case HYSCAN_FIX_TRACK_LAST:

@@ -62,18 +62,14 @@ struct _HyScanFixDBClass
   GObjectClass parent_class;
 };
 
-HYSCAN_API
 GType                  hyscan_fix_db_get_type         (void);
 
-HYSCAN_API
 HyScanFixDB *          hyscan_fix_db_new              (void);
 
-HYSCAN_API
 void                   hyscan_fix_db_upgrade          (HyScanFixDB        *fix,
                                                        const gchar        *db_path,
                                                        HyScanCancellable  *cancellable);
 
-HYSCAN_API
 gboolean               hyscan_fix_db_complete         (HyScanFixDB        *fix);
 
 G_END_DECLS

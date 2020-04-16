@@ -65,6 +65,8 @@ hyscan_fix_project_get_hash (HyScanFixProjectVersion version)
       return "ad1f40a3292926b566fe8ed6465a6e64";
     case HYSCAN_FIX_PROJECT_B288BA04:
       return "b288ba043bea8a11886a458a4bfab4a8";
+    case HYSCAN_FIX_PROJECT_C95A6F48:
+      return "c95a6f48d4f0f2784dfd45351ab83f8a";
     default:
       break;
     }
@@ -300,9 +302,6 @@ hyscan_fix_project_6190124d (const gchar *db_path,
               gint source_old = g_key_file_get_integer (params_in, groups[i], keys[j], NULL);
               gint source_new = hyscan_fix_project_update_source_enum_6190124d (source_old);
               g_key_file_set_integer (params_out, groups[i], keys[j], source_new);
-
-              hyscan_fix_log (db_path, "convert source id in %s: %d -> %d\n",
-                              groups[i], source_old, source_new);
             }
           else
             {
@@ -397,8 +396,7 @@ hyscan_fix_project_3c282d25 (const gchar *db_path,
   GKeyFile *params_in = NULL;
   GKeyFile *params_out = NULL;
   gchar **groups = NULL;
-  gchar **keys = NULL;
-  guint i,j;
+  guint i, j;
 
   /* Бэкап меток. */
   prm_file = g_build_filename (project_path, "project.prm", "waterfall-mark.prm", NULL);
@@ -410,87 +408,69 @@ hyscan_fix_project_3c282d25 (const gchar *db_path,
   prm_file = g_build_filename (db_path, project_path, "project.prm", "waterfall-mark.prm", NULL);
 
   params_in = g_key_file_new ();
-  g_key_file_load_from_file (params_in, prm_file, G_KEY_FILE_NONE, NULL);
-
   params_out = g_key_file_new ();
+
+  g_key_file_load_from_file (params_in, prm_file, G_KEY_FILE_NONE, NULL);
   groups = g_key_file_get_groups (params_in, NULL);
 
   for (i = 0; groups != NULL && groups[i] != NULL; i++)
     {
-      keys = g_key_file_get_keys (params_in, groups[i], NULL, NULL);
+      gchar **keys = g_key_file_get_keys (params_in, groups[i], NULL, NULL);
 
       for (j = 0; keys != NULL && keys[j] != NULL; j++)
         {
-          const gchar *key_out = NULL;
-
           if (g_strcmp0 (keys[j], "/time/creation") == 0)
             {
               gint64 ctime = g_key_file_get_int64 (params_in, groups[i], keys[j], NULL);
-              key_out = "/ctime";
-              g_key_file_set_int64 (params_out, groups[i], key_out, ctime);
+              g_key_file_set_int64 (params_out, groups[i], "/ctime", ctime);
             }
           else if (g_strcmp0 (keys[j], "/time/modification") == 0)
             {
               gint64 mtime = g_key_file_get_int64 (params_in, groups[i], keys[j], NULL);
-              key_out = "/mtime";
-              g_key_file_set_int64 (params_out, groups[i], key_out, mtime);
+              g_key_file_set_int64 (params_out, groups[i], "/mtime", mtime);
             }
           else if (g_strcmp0 (keys[j], "/coordinates/source0") == 0)
             {
               gint source = g_key_file_get_integer (params_in, groups[i], keys[j], NULL);
-              key_out = "/source";
-              g_key_file_set_integer (params_out, groups[i], key_out, source);
+              g_key_file_set_integer (params_out, groups[i], "/source", source);
             }
           else if (g_strcmp0 (keys[j], "/coordinates/index0") == 0)
             {
               gint index = g_key_file_get_integer (params_in, groups[i], keys[j], NULL);
-              key_out = "/index";
-              g_key_file_set_integer (params_out, groups[i], key_out, index);
+              g_key_file_set_integer (params_out, groups[i], "/index", index);
             }
           else if (g_strcmp0 (keys[j], "/coordinates/count0") == 0)
             {
               gint count = g_key_file_get_integer (params_in, groups[i], keys[j], NULL);
-              key_out = "/count";
-              g_key_file_set_integer (params_out, groups[i], key_out, count);
+              g_key_file_set_integer (params_out, groups[i], "/count", count);
             }
           else if (g_strcmp0 (keys[j], "/coordinates/lat") == 0)
             {
               gdouble lat = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
-              key_out = "/lat";
-              g_key_file_set_double (params_out, groups[i], key_out, lat);
+              g_key_file_set_double (params_out, groups[i], "/lat", lat);
             }
           else if (g_strcmp0 (keys[j], "/coordinates/lon") == 0)
             {
               gdouble lon = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
-              key_out = "/lon";
-              g_key_file_set_double (params_out, groups[i], key_out, lon);
+              g_key_file_set_double (params_out, groups[i], "/lon", lon);
             }
           else if (g_strcmp0 (keys[j], "/coordinates/width") == 0)
             {
               gdouble width = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
               width /= 1000.0;
-              key_out = "/width";
-              g_key_file_set_double (params_out, groups[i], key_out, width);
+              g_key_file_set_double (params_out, groups[i], "/width", width);
             }
           else if (g_strcmp0 (keys[j], "/coordinates/height") == 0)
             {
               gdouble height = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
               height /= 1000.0;
-              key_out = "/height";
-              g_key_file_set_double (params_out, groups[i], key_out, height);
+              g_key_file_set_double (params_out, groups[i], "/height", height);
             }
           else
             {
               gchar *value = g_key_file_get_string (params_in, groups[i], keys[j], NULL);
               g_key_file_set_string (params_out, groups[i], keys[j], value);
               g_free (value);
-              continue;
-            }
-
-          if (g_strcmp0 (keys[j], key_out) != 0)
-            {
-              hyscan_fix_log (db_path, "rename track parameter in %s: %s -> %s\n",
-                              groups[i], keys[j], key_out);
             }
         }
 
@@ -565,9 +545,6 @@ hyscan_fix_project_7f9eb90c (const gchar *db_path,
               gint source_id = g_key_file_get_integer (params_in, groups[i], keys[j], NULL);
               const gchar *source = hyscan_fix_project_get_source_by_id_7f9eb90c (source_id);
               g_key_file_set_string (params_out, groups[i], keys[j], source);
-
-              hyscan_fix_log (db_path, "convert source id in %s: %d -> %s\n",
-                              groups[i], source_id, source);
             }
           else
             {
@@ -675,6 +652,103 @@ hyscan_fix_project_ad1f40a3 (const gchar *db_path,
   status = hyscan_fix_cleanup (db_path);
 
 exit:
+  return status;
+}
+
+/* Функция обновляет формат данных параметров проекта с версии b288ba04
+ * до c95a6f48.
+ *
+ * Версия b288ba04 записывалась ревизией HyScan для "корейцев" от 04.04.2020.
+ *
+ * При обновлении до c95a6f48 изменились названия параметров планируемых галсов:
+ *
+ * /start-lat -> /start/lat
+ * /start-lon -> /start/lon
+ * /end-lat   -> /end/lat
+ * /end-lon   -> /end/lon
+ */
+static gboolean
+hyscan_fix_project_b288ba04 (const gchar *db_path,
+                             const gchar *project_path)
+{
+  gboolean status = FALSE;
+  gchar *prm_file = NULL;
+
+  GKeyFile *params_in = NULL;
+  GKeyFile *params_out = NULL;
+  gchar **groups = NULL;
+  guint i, j;
+
+  /* Бэкап плана съёмки. */
+  prm_file = g_build_filename (project_path, "project.prm", "planner.prm", NULL);
+  if (!hyscan_fix_file_backup (db_path, prm_file, FALSE))
+    goto exit;
+
+  /* Преобразование параметров плана съёмки. */
+  g_free (prm_file);
+  prm_file = g_build_filename (db_path, project_path, "project.prm", "planner.prm", NULL);
+
+  params_in = g_key_file_new ();
+  params_out = g_key_file_new ();
+
+  g_key_file_load_from_file (params_in, prm_file, G_KEY_FILE_NONE, NULL);
+  groups = g_key_file_get_groups (params_in, NULL);
+
+  for (i = 0; groups != NULL && groups[i] != NULL; i++)
+    {
+      gchar **keys = g_key_file_get_keys (params_in, groups[i], NULL, NULL);
+
+      for (j = 0; keys != NULL && keys[j] != NULL; j++)
+        {
+          if (g_strcmp0 (keys[j], "/start-lat") == 0)
+            {
+              gdouble start_lat = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
+              g_key_file_set_double (params_out, groups[i], "/start/lat", start_lat);
+            }
+          else if (g_strcmp0 (keys[j], "/start-lon") == 0)
+            {
+              gdouble start_lon = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
+              g_key_file_set_double (params_out, groups[i], "/start/lon", start_lon);
+            }
+          else if (g_strcmp0 (keys[j], "/end-lat") == 0)
+            {
+              gdouble end_lat = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
+              g_key_file_set_double (params_out, groups[i], "/end/lat", end_lat);
+            }
+          else if (g_strcmp0 (keys[j], "/end-lon") == 0)
+            {
+              gdouble end_lon = g_key_file_get_double (params_in, groups[i], keys[j], NULL);
+              g_key_file_set_double (params_out, groups[i], "/end/lon", end_lon);
+            }
+          else
+            {
+              gchar *value = g_key_file_get_string (params_in, groups[i], keys[j], NULL);
+              g_key_file_set_string (params_out, groups[i], keys[j], value);
+              g_free (value);
+            }
+        }
+
+      g_strfreev (keys);
+    }
+
+  g_strfreev (groups);
+
+  /* Записываем изменённые параметры. */
+  if (!g_key_file_save_to_file (params_out, prm_file, NULL))
+    goto exit;
+
+  /* Обновление схемы параметров галса. */
+  if (!hyscan_fix_project_set_schema (db_path, project_path, HYSCAN_FIX_PROJECT_C95A6F48))
+    goto exit;
+
+  /* Уборка. */
+  status = hyscan_fix_cleanup (db_path);
+
+exit:
+  g_clear_pointer (&params_in, g_key_file_unref);
+  g_clear_pointer (&params_out, g_key_file_unref);
+  g_free (prm_file);
+
   return status;
 }
 
@@ -802,6 +876,10 @@ hyscan_fix_project (const gchar *db_path,
         status = hyscan_fix_project_ad1f40a3 (db_path, project_path);
 
     case HYSCAN_FIX_PROJECT_B288BA04:
+      if (status)
+        status = hyscan_fix_project_b288ba04 (db_path, project_path);
+
+    case HYSCAN_FIX_PROJECT_C95A6F48:
       break;
 
     case HYSCAN_FIX_PROJECT_LAST:
