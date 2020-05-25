@@ -188,7 +188,7 @@ hyscan_fix_file_db_id (const gchar *db_path,
   gchar *file;
   GFile *fin;
   GFileInputStream *sin;
-  HyScanFixFileIDType id;
+  HyScanFixFileIDType id = { 0 };
 
   file = g_build_filename (db_path, file_path, NULL);
   fin = g_file_new_for_path (file);
