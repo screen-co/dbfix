@@ -28,6 +28,7 @@ add_custom_command (OUTPUT "${CMAKE_BINARY_DIR}/resources/hyscan-fix-resources.c
                     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../schemas/e8b616ccac5dab4da97444e4b93ac7f4"
                     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../schemas/423880d10472f9465725e5d4761b32cd"
                     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../schemas/49a23606a3160bb9e5cfdf52a8badd81"
+                    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../schemas/8c1d17c827ebbc76fca7548e4ca06226"
                     VERBATIM)
 
 add_executable (dbfix-cli dbfix-cli.c

@@ -67,6 +67,8 @@ hyscan_fix_project_get_hash (HyScanFixProjectVersion version)
       return "b288ba043bea8a11886a458a4bfab4a8";
     case HYSCAN_FIX_PROJECT_C95A6F48:
       return "c95a6f48d4f0f2784dfd45351ab83f8a";
+    case HYSCAN_FIX_PROJECT_8C1D17C8:
+      return "8c1d17c827ebbc76fca7548e4ca06226";
     default:
       break;
     }
@@ -752,6 +754,97 @@ exit:
   return status;
 }
 
+/* Функция обновляет формат данных параметров проекта с версии b288ba04
+ * до 8c1d17c8.
+ *
+ * Версия b288ba04 являлась внутренней версией.
+ *
+ * При обновлении до 8c1d17c8 внесены следующие изменения:
+ *
+ * - добавлена схема данных группы объектов "label",
+ * - добавлено поле /labels в схему информации о галсе "track-info",
+ * - в схемах меток переименовано поле /label -> /labels,
+ * - добавлена схема параметров отображения галсов на планшете "map-track".
+ */
+static gboolean
+hyscan_fix_project_c95a6f48 (const gchar *db_path,
+                             const gchar *project_path)
+{
+  gboolean status = FALSE;
+  const gchar *files[] = {"waterfall-mark.prm", "geo-mark.prm"};
+  gchar *prm_file = NULL;
+  guint k;
+
+  for (k = 0; k < G_N_ELEMENTS (files); k++)
+    {
+      gboolean file_status;
+      GKeyFile *params_in;
+      GKeyFile *params_out;
+      gchar **groups;
+      guint i, j;
+
+      /* Бэкап меток. */
+      prm_file = g_build_filename (project_path, "project.prm", files[k], NULL);
+      if (!hyscan_fix_file_backup (db_path, prm_file, FALSE))
+        goto exit;
+
+      /* Преобразование параметров меток. */
+      g_free (prm_file);
+      prm_file = g_build_filename (db_path, project_path, "project.prm", files[k], NULL);
+
+      params_in = g_key_file_new ();
+      params_out = g_key_file_new ();
+
+      g_key_file_load_from_file (params_in, prm_file, G_KEY_FILE_NONE, NULL);
+      groups = g_key_file_get_groups (params_in, NULL);
+
+      for (i = 0; groups != NULL && groups[i] != NULL; i++)
+        {
+          gchar **keys = g_key_file_get_keys (params_in, groups[i], NULL, NULL);
+
+          for (j = 0; keys != NULL && keys[j] != NULL; j++)
+            {
+              if (g_strcmp0 (keys[j], "/label") == 0)
+                {
+                  gint64 labels = g_key_file_get_int64 (params_in, groups[i], keys[j], NULL);
+                  g_key_file_set_int64 (params_out, groups[i], "/labels", labels);
+                }
+              else
+                {
+                  gchar *value = g_key_file_get_string (params_in, groups[i], keys[j], NULL);
+                  g_key_file_set_string (params_out, groups[i], keys[j], value);
+                  g_free (value);
+                }
+            }
+
+          g_strfreev (keys);
+        }
+
+      g_strfreev (groups);
+
+      /* Записываем изменённые параметры. */
+      file_status = g_key_file_save_to_file (params_out, prm_file, NULL);
+      g_key_file_unref (params_in);
+      g_key_file_unref (params_out);
+      g_clear_pointer (&prm_file, g_free);
+
+      if (!file_status)
+        goto exit;
+    }
+
+  /* Обновление схемы параметров проекта. */
+  if (!hyscan_fix_project_set_schema (db_path, project_path, HYSCAN_FIX_PROJECT_8C1D17C8))
+    goto exit;
+
+  /* Уборка. */
+  status = hyscan_fix_cleanup (db_path);
+
+exit:
+  g_free (prm_file);
+
+  return status;
+}
+
 /**
  * hyscan_fix_project_get_version:
  * @db_path: путь к базе данных (каталог с проектами)
@@ -880,6 +973,10 @@ hyscan_fix_project (const gchar *db_path,
         status = hyscan_fix_project_b288ba04 (db_path, project_path);
 
     case HYSCAN_FIX_PROJECT_C95A6F48:
+      if (status)
+        status = hyscan_fix_project_c95a6f48 (db_path, project_path);
+
+    case HYSCAN_FIX_PROJECT_8C1D17C8:
       break;
 
     case HYSCAN_FIX_PROJECT_LAST:
