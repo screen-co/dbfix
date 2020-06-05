@@ -48,6 +48,8 @@ add_executable (dbfix-cli dbfix-cli.c
 target_link_libraries (dbfix ${GTK3_LIBRARIES} ${HYSCAN_LIBRARIES})
 target_link_libraries (dbfix-cli ${GLIB2_LIBRARIES} ${HYSCAN_CLI_LIBRARIES})
 
+set_property (TARGET dbfix PROPERTY WIN32_EXECUTABLE true)
+
 install (TARGETS dbfix
                  dbfix-cli
          COMPONENT runtime
