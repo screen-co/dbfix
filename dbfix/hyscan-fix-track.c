@@ -60,6 +60,8 @@ hyscan_fix_track_get_hash (HyScanFixTrackVersion version)
       return "49a23606a3160bb9e5cfdf52a8badd81";
     case HYSCAN_FIX_TRACK_E4DA49A9:
       return "e4da49a9e1a33f0e866996879f3cdc90";
+    case HYSCAN_FIX_TRACK_C3D0AD78:
+      return "c3d0ad780bdf897fd0758851f10e9b70";
     default:
       break;
     }
@@ -1100,7 +1102,7 @@ exit:
 
 /* Функция обновляет формат данных галса с версии 49a23606 до e4da49a9.
  *
- * Версия b288ba04 записывалась ревизией HyScan для "корейцев" от 04.04.2020.
+ * Версия 49a23606 записывалась ревизией HyScan для "корейцев" от 01.04.2020.
  *
  * При обновлении до e4da49a9 изменилось название параметра планируемой
  * скорости съёмки /plan/velocity-> /plan/speed.
@@ -1171,6 +1173,107 @@ hyscan_fix_track_49a23606 (const gchar *db_path,
 exit:
   g_clear_pointer (&params_in, g_key_file_unref);
   g_clear_pointer (&params_out, g_key_file_unref);
+  g_free (prm_file);
+
+  return status;
+}
+
+/* Функция обновляет формат данных галса с версии e4da49a9 до c3d0ad78.
+ *
+ * Версия e4da49a9 использовалась в monorepo/wip/hyscan-499 с 25.05.2020.
+ *
+ * При обновлении до c3d0ad78 добавились поля /description и /actuator
+ * в схеме acoustic. Так как поддержка кругового обзора добавлена только
+ * с этой версией, поле /actuator оставляем пустым.
+ */
+static gboolean
+hyscan_fix_track_e4da49a9 (const gchar *db_path,
+                           const gchar *track_path)
+{
+  gboolean status = FALSE;
+  gchar *prm_file = NULL;
+
+  GKeyFile *params = NULL;
+  gchar **groups = NULL;
+  guint i;
+
+  /* Бэкап параметров галса. */
+  prm_file = g_build_filename (track_path, "track.prm", NULL);
+  if (!hyscan_fix_file_backup (db_path, prm_file, TRUE))
+    goto exit;
+
+  /* Преобразование параметров галса. */
+  g_free (prm_file);
+  prm_file = g_build_filename (db_path, track_path, "track.prm", NULL);
+
+  params = g_key_file_new ();
+  if (!g_key_file_load_from_file (params, prm_file, G_KEY_FILE_NONE, NULL))
+    goto exit;
+
+  /* Для акустических каналов добавляем параметр /description. */
+  groups = g_key_file_get_groups (params, NULL);
+  for (i = 0; groups != NULL && groups[i] != NULL; i++)
+    {
+      gchar *schema_id = g_key_file_get_string (params, groups[i], "schema-id", NULL);
+      if (g_strcmp0 (schema_id, "acoustic") == 0)
+        {
+          const gchar *description;
+          gdouble frequency;
+
+          frequency = g_key_file_get_double (params, groups[i], "/signal/frequency", NULL);
+          if (g_strrstr (groups[i], "forward-look") != NULL)
+            {
+              description = "400";
+            }
+          else if (g_strrstr (groups[i], "profiler") != NULL)
+            {
+              description = (frequency < 200000.0) ? "150" : "300";
+            }
+          else if (g_strrstr (groups[i], "echo") != NULL)
+            {
+              if (frequency < 500000.0)
+                description = "400";
+              else if (frequency < 800000.0)
+                description = "700";
+              else
+                description = "1000";
+            }
+          else if (frequency < 200000.0)
+            {
+              description = "100";
+            }
+          else if (frequency < 400000.0)
+            {
+              description = "300";
+            }
+          else if (frequency < 800000.0)
+            {
+              description = "700";
+            }
+          else
+            {
+              description = "1200";
+            }
+
+          g_key_file_set_string (params, groups[i], "/description", description);
+        }
+      g_free (schema_id);
+    }
+
+  /* Записываем изменённые параметры. */
+  if (!g_key_file_save_to_file (params, prm_file, NULL))
+    goto exit;
+
+  /* Обновление схемы параметров галса. */
+  if (!hyscan_fix_track_set_schema (db_path, track_path, HYSCAN_FIX_TRACK_C3D0AD78))
+    goto exit;
+
+  /* Уборка. */
+  status = hyscan_fix_cleanup (db_path);
+
+exit:
+  g_clear_pointer (&params, g_key_file_unref);
+  g_clear_pointer (&groups, g_strfreev);
   g_free (prm_file);
 
   return status;
@@ -1293,6 +1396,10 @@ hyscan_fix_track (const gchar       *db_path,
         status = hyscan_fix_track_49a23606 (db_path, track_path);
 
     case HYSCAN_FIX_TRACK_E4DA49A9:
+      if (status)
+        status = hyscan_fix_track_e4da49a9 (db_path, track_path);
+
+    case HYSCAN_FIX_TRACK_C3D0AD78:
       break;
 
     case HYSCAN_FIX_TRACK_LAST:
