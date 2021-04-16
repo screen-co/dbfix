@@ -65,7 +65,8 @@ struct _HyScanFixAssistantClass
 
 GType          hyscan_fix_assistant_get_type          (void);
 
-GtkWidget *    hyscan_fix_assistant_new               (const gchar * const *profiles_dirs);
+GtkWidget *    hyscan_fix_assistant_new               (const gchar *system_profiles,
+                                                       const gchar *user_profiles);
 
 G_END_DECLS
 

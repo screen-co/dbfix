@@ -52,7 +52,8 @@
 enum
 {
   PROP_O,
-  PROP_PROFILES_DIRS
+  PROP_SYSTEM_PROFILES,
+  PROP_USER_PROFILES
 };
 
 enum
@@ -65,7 +66,8 @@ enum
 
 struct _HyScanFixAssistantPrivate
 {
-  gchar              **profiles_dirs;      /* Список каталогов с профилями. */
+  gchar               *system_profiles;    /* Путь к системным профилям. */
+  gchar               *user_profiles;      /* Путь к пользовательским профилям. */
   gchar               *db_path;            /* Каталог с базой данных. */
 
   HyScanFixDB         *db_fix;             /* Объект обновления базы данных. */
@@ -121,8 +123,11 @@ hyscan_fix_assistant_class_init (HyScanFixAssistantClass *klass)
   object_class->constructed = hyscan_fix_assistant_object_constructed;
   object_class->finalize = hyscan_fix_assistant_object_finalize;
 
-  g_object_class_install_property (object_class, PROP_PROFILES_DIRS,
-    g_param_spec_pointer ("profiles-dirs", "ProfilesDirs", "Paths to HyScan profiles",
+  g_object_class_install_property (object_class, PROP_SYSTEM_PROFILES,
+    g_param_spec_string ("system-profiles", "SystemProfiles", "Path to system profiles", NULL,
+                          G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+  g_object_class_install_property (object_class, PROP_USER_PROFILES,
+    g_param_spec_string ("user-profiles", "UserProfiles", "Path to user profiles", NULL,
                           G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
 }
 
@@ -143,8 +148,12 @@ hyscan_fix_assistant_set_property (GObject      *object,
 
   switch (prop_id)
     {
-    case PROP_PROFILES_DIRS:
-      priv->profiles_dirs = g_strdupv (g_value_get_pointer (value));
+    case PROP_SYSTEM_PROFILES:
+      priv->system_profiles = g_value_dup_string (value);
+      break;
+
+    case PROP_USER_PROFILES:
+      priv->user_profiles = g_value_dup_string (value);
       break;
 
     default:
@@ -178,7 +187,8 @@ hyscan_fix_assistant_object_finalize (GObject *object)
 
   g_object_unref (priv->db_fix);
 
-  g_strfreev (priv->profiles_dirs);
+  g_free (priv->system_profiles);
+  g_free (priv->user_profiles);
   g_free (priv->db_path);
 
   G_OBJECT_CLASS (hyscan_fix_assistant_parent_class)->finalize (object);
@@ -256,9 +266,18 @@ hyscan_fix_assistant_page_welcome (void)
 static GtkWidget *
 hyscan_fix_assistant_page_select_db (HyScanFixAssistant *fix)
 {
+  HyScanFixAssistantPrivate *priv = fix->priv;
+  gchar *profiles[3];
   GtkWidget *selector;
 
-  selector = hyscan_gtk_profile_db_new (fix->priv->profiles_dirs, TRUE);
+  profiles[0] = priv->system_profiles;
+  if (g_strcmp0 (priv->system_profiles, priv->user_profiles) != 0)
+    profiles[1] = priv->user_profiles;
+  else
+    profiles[1] = NULL;
+  profiles[2] = NULL;
+
+  selector = hyscan_gtk_profile_db_new (profiles, TRUE);
   hyscan_fix_assistant_decorate_widget (selector, 6, TRUE);
 
   g_signal_connect_swapped (selector, "selected", G_CALLBACK (hyscan_fix_assistant_select_db), fix);
@@ -553,7 +572,8 @@ hyscan_fix_assistant_start_again (HyScanFixAssistant *fix)
 
 /**
  * hyscan_fix_assistant_new:
- * @profiles_dirs: список каталогов с профилями баз данных
+ * @system_profiles: путь к системным профилям
+ * @user_profiles: путь к пользовательским профилям
  *
  * Функция создаёт новый объект #HyScanFixAssistant.
  *
@@ -561,10 +581,12 @@ hyscan_fix_assistant_start_again (HyScanFixAssistant *fix)
  */
 
 GtkWidget *
-hyscan_fix_assistant_new (const gchar * const *profiles_dirs)
+hyscan_fix_assistant_new (const gchar *system_profiles,
+                          const gchar *user_profiles)
 {
   return g_object_new (HYSCAN_TYPE_FIX_ASSISTANT,
                        "use-header-bar", TRUE,
-                       "profiles-dirs", profiles_dirs,
+                       "system-profiles", system_profiles,
+                       "user-profiles", user_profiles,
                        NULL);
 }

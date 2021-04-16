@@ -55,7 +55,8 @@ main (int    argc,
 
   gtk_init (&argc, &argv);
 
-  assistant = hyscan_fix_assistant_new (hyscan_config_get_profile_dirs ());
+  assistant = hyscan_fix_assistant_new (hyscan_config_get_system_dir (),
+                                        hyscan_config_get_user_dir ());
 
   gtk_widget_show_all (assistant);
 
